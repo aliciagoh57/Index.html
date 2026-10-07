@@ -1,0 +1,2538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Airside PRD Daily Reader</title>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+padding:18px;
+font-family:Arial,Helvetica,sans-serif;
+background:#EAF7F5;
+color:#37474F;
+}
+
+.container{
+max-width:1100px;
+margin:auto;
+}
+
+.header{
+background:#00796B;
+color:white;
+padding:20px;
+border-radius:16px;
+text-align:center;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.header h1{
+margin:0;
+font-size:23px;
+letter-spacing:.4px;
+}
+
+.header p{
+margin:7px 0 0;
+font-size:14px;
+}
+
+.system-status{
+display:inline-block;
+margin-top:12px;
+background:#80CBC4;
+color:#004D40;
+padding:6px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+}
+
+.card{
+background:white;
+margin-top:16px;
+padding:18px;
+border-radius:16px;
+border:1px solid #B2DFDB;
+box-shadow:0 3px 10px rgba(0,0,0,.05);
+}
+
+.card-title{
+font-size:17px;
+font-weight:bold;
+color:#00695C;
+margin-bottom:14px;
+}
+
+.start-camera{
+background:#00796B;
+color:white;
+border-radius:14px;
+padding:20px;
+text-align:center;
+cursor:pointer;
+user-select:none;
+}
+
+.start-camera-title{
+font-size:17px;
+font-weight:bold;
+}
+
+.start-camera-text{
+margin-top:6px;
+font-size:13px;
+opacity:.9;
+}
+
+#reader{
+width:100%;
+margin-top:14px;
+display:none;
+}
+
+.message{
+margin-top:12px;
+background:#E0F2F1;
+color:#00695C;
+padding:12px;
+border-radius:10px;
+font-size:13px;
+text-align:center;
+}
+
+.officer-card{
+margin-top:14px;
+padding:15px;
+border-radius:12px;
+background:#F4FBFA;
+border:1px solid #B2DFDB;
+display:none;
+}
+
+.officer-row{
+display:flex;
+justify-content:space-between;
+gap:10px;
+padding:5px 0;
+border-bottom:1px solid #E0F2F1;
+}
+
+.officer-row:last-child{
+border-bottom:none;
+}
+
+.officer-label{
+font-size:12px;
+color:#78909C;
+}
+
+.officer-value{
+font-size:14px;
+font-weight:bold;
+color:#37474F;
+text-align:right;
+}
+
+.controls{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+align-items:center;
+}
+
+.controls input{
+padding:10px 12px;
+border:1px solid #B2DFDB;
+border-radius:10px;
+font-size:13px;
+background:#FAFFFE;
+color:#37474F;
+outline:none;
+}
+
+#dateFilter{
+width:145px;
+height:40px;
+padding:8px 10px;
+border:1px solid #80CBC4;
+border-radius:10px;
+background:#F4FBFA;
+color:#00695C;
+font-size:13px;
+font-weight:600;
+}
+
+#searchInput{
+height:40px;
+min-width:190px;
+}
+
+button{
+border:none;
+border-radius:10px;
+padding:10px 15px;
+font-size:13px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.authorised-btn{
+background:#80CBC4;
+color:#004D40;
+}
+
+.clear-btn{
+background:#B3261E;
+color:white;
+}
+
+.table-wrapper{
+overflow-x:auto;
+margin-top:15px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+min-width:900px;
+}
+
+th{
+background:#00796B;
+color:white;
+padding:10px 8px;
+font-size:12px;
+text-align:left;
+white-space:nowrap;
+}
+
+td{
+padding:9px 8px;
+border-bottom:1px solid #E0F2F1;
+font-size:12px;
+white-space:nowrap;
+}
+
+.status-valid{
+color:#00796B;
+font-weight:bold;
+}
+
+.status-expired{
+color:#B3261E;
+font-weight:bold;
+}
+
+.empty-message{
+text-align:center;
+padding:25px;
+color:#78909C;
+font-size:13px;
+}
+
+.footer{
+text-align:center;
+margin-top:18px;
+font-size:11px;
+color:#78909C;
+}
+
+@media(max-width:600px){
+
+body{
+padding:10px;
+}
+
+.header h1{
+font-size:20px;
+}
+
+.card{
+padding:14px;
+}
+
+.controls{
+flex-direction:column;
+align-items:flex-start;
+}
+
+#searchInput{
+width:100%;
+}
+
+.controls button{
+width:100%;
+}
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+<div class="header">
+
+<h1>
+Airside PRD Daily Reader
+</h1>
+
+<p>
+Daily PRD Card Collection
+</p>
+
+<div class="system-status">
+SYSTEM ONLINE
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<div class="card-title">
+PRD Card Scanner
+</div>
+
+
+<div id="startCameraArea"
+     class="start-camera"
+     onclick="startCamera()">
+
+<div class="start-camera-title">
+Tap here to start camera
+</div>
+
+<div class="start-camera-text">
+Tap once to start scanning.
+</div>
+
+</div>
+
+
+<div id="reader"></div>
+
+
+<div id="message"
+     class="message">
+
+Connecting to Firebase...
+
+</div>
+
+
+
+<div id="officerCard"
+     class="officer-card">
+
+
+<div class="officer-row">
+
+<div class="officer-label">
+Name
+</div>
+
+<div id="displayName"
+     class="officer-value">
+</div>
+
+</div>
+
+
+<div class="officer-row">
+
+<div class="officer-label">
+Rank
+</div>
+
+<div id="displayRank"
+     class="officer-value">
+</div>
+
+</div>
+
+
+<div class="officer-row">
+
+<div class="officer-label">
+Employee ID
+</div>
+
+<div id="displayEmployeeID"
+     class="officer-value">
+</div>
+
+</div>
+
+
+<div class="officer-row">
+
+<div class="officer-label">
+Pass ID
+</div>
+
+<div id="displayPassID"
+     class="officer-value">
+</div>
+
+</div>
+
+
+<div class="officer-row">
+
+<div class="officer-label">
+PRD Expiry
+</div>
+
+<div id="displayExpiry"
+     class="officer-value">
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<div class="card-title">
+Daily Collection List
+</div>
+
+
+<div class="controls">
+
+
+<input
+type="date"
+id="dateFilter"
+onchange="renderRecords()">
+
+
+<input
+type="text"
+id="searchInput"
+placeholder="Search Name or Employee ID"
+oninput="renderRecords()">
+
+
+<button
+class="authorised-btn"
+onclick="authorisedAccess()">
+
+Authorised Access
+
+</button>
+
+
+<button
+class="clear-btn"
+onclick="clearAllRecords()">
+
+Clear All Records
+
+</button>
+
+
+</div>
+
+
+<div class="table-wrapper">
+
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>No.</th>
+
+<th>Name</th>
+
+<th>Rank</th>
+
+<th>Employee ID</th>
+
+<th>Pass ID</th>
+
+<th>PRD Expiry</th>
+
+<th>Date</th>
+
+<th>Time</th>
+
+<th>Status</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="recordTableBody"></tbody>
+
+</table>
+
+
+<div id="emptyMessage"
+     class="empty-message">
+
+No PRD collection record for this date.
+
+</div>
+
+
+</div>
+
+</div>
+
+
+
+<div class="footer">
+
+Internal PRD Collection System | Version 2.0
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* =========================================
+   FIREBASE CONFIG
+========================================= */
+
+const firebaseConfig = {
+
+apiKey:
+"AIzaSyBkBHFMPqY3JUAPffRNz5QA6yWtNhOsutA",
+
+authDomain:
+"sdu-airside-prd-1fc91.firebaseapp.com",
+
+projectId:
+"sdu-airside-prd-1fc91",
+
+storageBucket:
+"sdu-airside-prd-1fc91.firebasestorage.app",
+
+messagingSenderId:
+"533657173144",
+
+appId:
+"1:533657173144:web:7e0145ba5d3de841d6e4ed"
+
+};
+
+
+
+/* =========================================
+   FIREBASE INITIALIZATION
+========================================= */
+
+let db=null;
+
+let auth=null;
+
+let firebaseConfigured=false;
+
+try{
+
+firebase.initializeApp(
+firebaseConfig
+);
+
+db=
+firebase.firestore();
+
+auth=
+firebase.auth();
+
+firebaseConfigured=true;
+
+}catch(error){
+
+console.error(
+"Firebase initialization error:",
+error
+);
+
+}
+
+
+
+/* =========================================
+   VARIABLES
+========================================= */
+
+let allRecords=[];
+
+let scanner=null;
+
+let scannerRunning=false;
+
+let scanProcessing=false;
+
+let authorised=false;
+
+let firebaseReady=false;
+
+let realtimeStarted=false;
+
+
+/* =========================================
+   CAMERA VARIABLES
+========================================= */
+
+let cameraTrack=null;
+
+let focusTimer=null;
+
+
+
+/* =========================================
+   OFFICERS
+========================================= */
+
+const employees=[
+
+{
+name:"LAU KIANG SENG",
+rank:"AVSO 3",
+employeeID:"64417",
+passID:"13005048GSO",
+expiry:"16/09/2026"
+},
+
+{
+name:"NAGASUNDARAM GIRIDHARAN",
+rank:"AVSO 2",
+employeeID:"73368",
+passID:"14004415ASO",
+expiry:"02/06/2029"
+},
+
+{
+name:"THARMASEELAN A/L SATHIAMURTHI",
+rank:"AVSO 1",
+employeeID:"155568",
+passID:"23002593HSO",
+expiry:"26/04/2027"
+},
+
+{
+name:"ARVINDRAN A/L ESWARAN",
+rank:"AVSO 1",
+employeeID:"157992",
+passID:"23005365FSO",
+expiry:"16/08/2027"
+},
+
+{
+name:"GEETA A/P SATHASIVAM",
+rank:"WAVSO 2",
+employeeID:"155530",
+passID:"23002860HSO",
+expiry:"09/10/2026"
+},
+
+{
+name:"THANASEELAN A/L RAJANDRAN",
+rank:"AVSO 3",
+employeeID:"106507",
+passID:"18001705JSO",
+expiry:"11/02/2031"
+},
+
+{
+name:"KALAIVANI A/P MUNIANDY",
+rank:"WAVSO 3",
+employeeID:"86766",
+passID:"15012353ESO",
+expiry:"14/04/2027"
+},
+
+{
+name:"MA LIZA N AUGUSTINE",
+rank:"WAVSO 2",
+employeeID:"73367",
+passID:"14004458ASO",
+expiry:"01/06/2029"
+},
+
+{
+name:"TEO ROU SHAN, TOMMY",
+rank:"AVSO 2",
+employeeID:"72334",
+passID:"14003993ISO",
+expiry:"03/05/2027"
+},
+
+{
+name:"PHUA CHIA LIANG",
+rank:"AVSO 3",
+employeeID:"76841",
+passID:"14009149BS",
+expiry:"24/10/2029"
+},
+
+{
+name:"LAKSHME A/P SUBRAMANNIAN",
+rank:"WAVSO 3",
+employeeID:"98261",
+passID:"17003587ISO",
+expiry:"16/04/2031"
+},
+
+{
+name:"RAVIN RAJ A/L JIWAH",
+rank:"AVSO 1",
+employeeID:"157472",
+passID:"23004730ISO",
+expiry:"19/07/2027"
+},
+
+{
+name:"GANGA SANTHIRASEGARAN",
+rank:"WAVSO 3",
+employeeID:"56456",
+passID:"12005579CSO",
+expiry:"30/08/2031"
+},
+
+{
+name:"CELEST GOH YUN XUAN",
+rank:"WAVSO 1",
+employeeID:"182026",
+passID:"PASSID973SO",
+expiry:"27/07/2031"
+},
+
+{
+name:"LIM PAU BENG",
+rank:"AVSO 1",
+employeeID:"181319",
+passID:"26011064FSO",
+expiry:"20/05/2031"
+},
+
+{
+name:"GOH THIAN YEW JOHN",
+rank:"AVSO 1",
+employeeID:"105544",
+passID:"17010399GSO",
+expiry:"21/12/2027"
+},
+
+{
+name:"ALIPIO JR TIANGSON SISON",
+rank:"AVSO 2",
+employeeID:"110377",
+passID:"18005451ISO",
+expiry:"24/06/2028"
+},
+
+{
+name:"SELVAYUGESWARAN SELVAKUMARAN",
+rank:"AVSO 1",
+employeeID:"180494",
+passID:"26011195GSO",
+expiry:"04/06/2031"
+},
+
+{
+name:"NATINI MANIMARAN",
+rank:"WAVSO 1",
+employeeID:"180644",
+passID:"26011133ZSO",
+expiry:"28/05/2031"
+}
+
+];
+
+
+
+/* =========================================
+   DATE
+========================================= */
+
+function getSingaporeDate(){
+
+const parts=
+
+new Intl.DateTimeFormat(
+"en-CA",
+{
+timeZone:"Asia/Singapore",
+year:"numeric",
+month:"2-digit",
+day:"2-digit"
+}
+).formatToParts(
+new Date()
+);
+
+let year="";
+
+let month="";
+
+let day="";
+
+
+parts.forEach(part=>{
+
+if(part.type==="year")
+year=part.value;
+
+if(part.type==="month")
+month=part.value;
+
+if(part.type==="day")
+day=part.value;
+
+});
+
+
+return `${year}-${month}-${day}`;
+
+}
+
+
+
+function getSingaporeTime(){
+
+return new Intl.DateTimeFormat(
+"en-SG",
+{
+timeZone:"Asia/Singapore",
+hour:"2-digit",
+minute:"2-digit",
+second:"2-digit",
+hour12:false
+}
+).format(
+new Date()
+);
+
+}
+
+
+
+function setToday(){
+
+document.getElementById(
+"dateFilter"
+).value=
+getSingaporeDate();
+
+}
+
+
+
+/* =========================================
+   SOUND
+========================================= */
+
+function createBeep(
+frequency,
+duration,
+volume,
+type="sine"
+){
+
+try{
+
+const AudioContext=
+window.AudioContext||
+window.webkitAudioContext;
+
+const context=
+new AudioContext();
+
+if(
+context.state==="suspended"
+)
+context.resume();
+
+const oscillator=
+context.createOscillator();
+
+const gain=
+context.createGain();
+
+oscillator.type=
+type;
+
+oscillator.frequency.value=
+frequency;
+
+gain.gain.setValueAtTime(
+volume,
+context.currentTime
+);
+
+gain.gain.exponentialRampToValueAtTime(
+.001,
+context.currentTime+duration
+);
+
+oscillator.connect(gain);
+
+gain.connect(
+context.destination
+);
+
+oscillator.start();
+
+oscillator.stop(
+context.currentTime+duration
+);
+
+}catch(error){
+
+console.log(
+"Audio unavailable."
+);
+
+}
+
+}
+
+
+
+function playSuccessSound(){
+
+createBeep(
+1350,
+.25,
+.30,
+"sine"
+);
+
+}
+
+
+
+function playDuplicateSound(){
+
+playSuccessSound();
+
+setTimeout(
+playSuccessSound,
+180
+);
+
+}
+
+
+
+function playErrorSound(){
+
+createBeep(
+420,
+.35,
+.18,
+"square"
+);
+
+}
+
+
+
+/* =========================================
+   QR NORMALISE
+========================================= */
+
+function cleanQR(value){
+
+return String(value||"")
+.trim()
+.toUpperCase()
+.replace(/\s+/g,"");
+
+}
+
+
+
+/* =========================================
+   FIND OFFICER
+========================================= */
+
+function findEmployeeFromQR(
+decodedText
+){
+
+const original=
+String(decodedText||"").trim();
+
+if(!original)
+return null;
+
+const qr=
+cleanQR(original);
+
+
+/* JSON */
+
+try{
+
+const data=
+JSON.parse(original);
+
+if(data){
+
+const passID=
+cleanQR(
+data.passID||
+data.passId||
+data.pass||
+""
+);
+
+if(passID){
+
+const officer=
+employees.find(
+item=>
+cleanQR(item.passID)===passID
+);
+
+if(officer)
+return officer;
+
+}
+
+
+const employeeID=
+cleanQR(
+data.employeeID||
+data.employeeId||
+data.id||
+""
+);
+
+if(employeeID){
+
+const officer=
+employees.find(
+item=>
+cleanQR(item.employeeID)===employeeID
+);
+
+if(officer)
+return officer;
+
+}
+
+}
+
+}catch(error){}
+
+
+/* EXACT PASS ID */
+
+let officer=
+employees.find(
+item=>
+qr===cleanQR(item.passID)
+);
+
+if(officer)
+return officer;
+
+
+/* PASS ID PREFIX */
+
+let simplified=
+qr
+.replace(/^PASS-ID[-_:]?/,"")
+.replace(/^PASSID[-_:]?/,"")
+.replace(/^PASS[-_:]?/,"")
+.replace(/^PRD[-_:]?/,"");
+
+
+officer=
+employees.find(
+item=>
+simplified===cleanQR(item.passID)
+);
+
+if(officer)
+return officer;
+
+
+/* PASS ID CONTAINS */
+
+officer=
+employees.find(
+item=>{
+
+const pass=
+cleanQR(item.passID);
+
+return pass &&
+qr.includes(pass);
+
+});
+
+if(officer)
+return officer;
+
+
+/* EXACT EMPLOYEE ID */
+
+officer=
+employees.find(
+item=>
+qr===cleanQR(item.employeeID)
+);
+
+if(officer)
+return officer;
+
+
+/* EMPLOYEE PREFIX */
+
+simplified=
+qr
+.replace(/^EMPLOYEE-ID[-_:]?/,"")
+.replace(/^EMPLOYEEID[-_:]?/,"")
+.replace(/^EMP[-_:]?/,"")
+.replace(/^ID[-_:]?/,"")
+.replace(/^PRD[-_:]?/,"");
+
+
+officer=
+employees.find(
+item=>
+simplified===cleanQR(item.employeeID)
+);
+
+if(officer)
+return officer;
+
+
+/* EMPLOYEE ID CONTAINS */
+
+officer=
+employees.find(
+item=>{
+
+const employeeID=
+cleanQR(item.employeeID);
+
+return employeeID &&
+qr.includes(employeeID);
+
+});
+
+if(officer)
+return officer;
+
+
+return null;
+
+}
+
+
+
+/* =========================================
+   SHOW OFFICER
+========================================= */
+
+function showOfficer(
+employee
+){
+
+document.getElementById(
+"officerCard"
+).style.display="block";
+
+
+document.getElementById(
+"displayName"
+).innerText=
+employee.name;
+
+
+document.getElementById(
+"displayRank"
+).innerText=
+employee.rank;
+
+
+document.getElementById(
+"displayEmployeeID"
+).innerText=
+employee.employeeID;
+
+
+document.getElementById(
+"displayPassID"
+).innerText=
+authorised
+?employee.passID
+:"*********";
+
+
+document.getElementById(
+"displayExpiry"
+).innerText=
+employee.expiry;
+
+}
+
+
+
+/* =========================================
+   SCAN
+========================================= */
+
+async function handleScan(
+decodedText
+){
+
+if(scanProcessing)
+return;
+
+scanProcessing=true;
+
+try{
+
+const employee=
+findEmployeeFromQR(
+decodedText
+);
+
+if(!employee){
+
+playErrorSound();
+
+document.getElementById(
+"message"
+).innerText=
+"QR Code not recognised.";
+
+return;
+
+}
+
+
+showOfficer(
+employee
+);
+
+await saveRecord(
+employee
+);
+
+}finally{
+
+setTimeout(
+()=>{
+scanProcessing=false;
+},
+500
+);
+
+}
+
+}
+
+
+
+/* =========================================
+   WAIT FIREBASE
+========================================= */
+
+function waitForFirebase(){
+
+return new Promise(
+(resolve,reject)=>{
+
+if(
+firebaseReady &&
+auth &&
+auth.currentUser
+){
+
+resolve(
+auth.currentUser
+);
+
+return;
+
+}
+
+
+let attempts=0;
+
+
+const timer=
+setInterval(
+()=>{
+
+attempts++;
+
+
+if(
+firebaseReady &&
+auth &&
+auth.currentUser
+){
+
+clearInterval(timer);
+
+resolve(
+auth.currentUser
+);
+
+return;
+
+}
+
+
+if(attempts>=100){
+
+clearInterval(timer);
+
+reject(
+new Error(
+"Firebase authentication timeout."
+)
+);
+
+}
+
+},
+100
+);
+
+});
+
+}
+
+
+
+/* =========================================
+   SAVE RECORD
+========================================= */
+
+async function saveRecord(
+employee
+){
+
+if(!firebaseConfigured){
+
+document.getElementById(
+"message"
+).innerText=
+"Firebase Config not added yet.";
+
+playErrorSound();
+
+return;
+
+}
+
+
+try{
+
+await waitForFirebase();
+
+
+const date=
+getSingaporeDate();
+
+const time=
+getSingaporeTime();
+
+
+const duplicate=
+allRecords.some(
+record=>
+String(record.employeeID)===
+String(employee.employeeID)&&
+String(record.date)===
+String(date)
+);
+
+
+if(duplicate){
+
+playDuplicateSound();
+
+document.getElementById(
+"message"
+).innerText=
+employee.name+
+" already collected today. (2 beeps)";
+
+return;
+
+}
+
+
+const record={
+
+employeeID:
+employee.employeeID,
+
+name:
+employee.name,
+
+rank:
+employee.rank,
+
+passID:
+employee.passID,
+
+expiry:
+employee.expiry,
+
+date:
+date,
+
+time:
+time,
+
+status:
+"VALID",
+
+createdAt:
+firebase.firestore.FieldValue
+.serverTimestamp()
+
+};
+
+
+await db
+.collection("prdRecords")
+.add(record);
+
+
+playSuccessSound();
+
+
+document.getElementById(
+"message"
+).innerText=
+employee.name+
+" PRD collected successfully. (1 beep)";
+
+
+}catch(error){
+
+console.error(
+"FIRESTORE SAVE ERROR:",
+error
+);
+
+
+document.getElementById(
+"message"
+).innerText=
+"Save failed: "+
+(error.code||"unknown error");
+
+
+playErrorSound();
+
+}
+
+}
+
+
+
+/* =========================================
+   CAMERA
+   ANDROID AUTO FOCUS
+========================================= */
+
+
+/*
+   Get the actual camera video track
+*/
+
+function getCameraTrack(){
+
+try{
+
+const video=
+document.querySelector(
+"#reader video"
+);
+
+if(!video){
+
+console.log(
+"Camera video element not found."
+);
+
+return null;
+
+}
+
+
+const stream=
+video.srcObject;
+
+if(!stream){
+
+console.log(
+"Camera stream not found."
+);
+
+return null;
+
+}
+
+
+const tracks=
+stream.getVideoTracks();
+
+
+if(
+!tracks ||
+tracks.length===0
+){
+
+console.log(
+"No video track found."
+);
+
+return null;
+
+}
+
+
+return tracks[0];
+
+
+}catch(error){
+
+console.log(
+"Unable to get camera track:",
+error
+);
+
+return null;
+
+}
+
+}
+
+
+
+/*
+   Apply continuous autofocus
+*/
+
+async function applyAutoFocus(){
+
+try{
+
+if(!cameraTrack){
+
+return;
+
+}
+
+
+const capabilities=
+cameraTrack.getCapabilities
+?cameraTrack.getCapabilities()
+:null;
+
+
+console.log(
+"Camera capabilities:",
+capabilities
+);
+
+
+if(
+capabilities &&
+capabilities.focusMode &&
+Array.isArray(
+capabilities.focusMode
+)
+){
+
+console.log(
+"Supported focus modes:",
+capabilities.focusMode
+);
+
+
+/*
+   Prefer continuous autofocus
+*/
+
+if(
+capabilities.focusMode
+.includes("continuous")
+){
+
+try{
+
+await cameraTrack.applyConstraints({
+
+advanced:[
+{
+focusMode:
+"continuous"
+}
+]
+
+});
+
+
+console.log(
+"Continuous autofocus enabled."
+);
+
+return;
+
+}catch(error){
+
+console.log(
+"Continuous focus failed:",
+error
+);
+
+}
+
+}
+
+
+/*
+   Fallback
+*/
+
+if(
+capabilities.focusMode
+.includes("single-shot")
+){
+
+try{
+
+await cameraTrack.applyConstraints({
+
+advanced:[
+{
+focusMode:
+"single-shot"
+}
+]
+
+});
+
+
+console.log(
+"Single-shot autofocus enabled."
+);
+
+}catch(error){
+
+console.log(
+"Single-shot focus failed:",
+error
+);
+
+}
+
+}
+
+}
+
+}catch(error){
+
+console.log(
+"Autofocus not available:",
+error
+);
+
+}
+
+}
+
+
+
+/*
+   Keep autofocus active
+*/
+
+function startFocusMonitor(){
+
+stopFocusMonitor();
+
+
+focusTimer=
+setInterval(
+async function(){
+
+if(
+scannerRunning &&
+cameraTrack
+){
+
+await applyAutoFocus();
+
+}
+
+},
+3000
+);
+
+}
+
+
+
+/*
+   Stop autofocus monitor
+*/
+
+function stopFocusMonitor(){
+
+if(focusTimer){
+
+clearInterval(
+focusTimer
+);
+
+focusTimer=null;
+
+}
+
+}
+
+
+
+/*
+   Start camera
+*/
+
+async function startCamera(){
+
+if(scannerRunning){
+
+return;
+
+}
+
+
+document.getElementById(
+"startCameraArea"
+).style.display="none";
+
+
+document.getElementById(
+"reader"
+).style.display="block";
+
+
+document.getElementById(
+"message"
+).innerText=
+"Starting camera...";
+
+
+scanner=
+new Html5Qrcode(
+"reader"
+);
+
+
+try{
+
+
+/*
+   First attempt:
+   Android rear camera
+*/
+
+await scanner.start(
+
+{
+facingMode:{
+exact:"environment"
+}
+},
+
+{
+fps:5,
+
+qrbox:250,
+
+aspectRatio:1.7777778
+
+},
+
+decodedText=>{
+
+handleScan(
+decodedText
+);
+
+},
+
+errorMessage=>{
+
+}
+
+);
+
+
+scannerRunning=true;
+
+
+/*
+   Wait for actual video stream
+*/
+
+setTimeout(
+async function(){
+
+cameraTrack=
+getCameraTrack();
+
+
+if(cameraTrack){
+
+console.log(
+"Camera track detected."
+);
+
+await applyAutoFocus();
+
+startFocusMonitor();
+
+}
+
+},
+800
+);
+
+
+document.getElementById(
+"message"
+).innerText=
+"Camera active. Scan PRD Card.";
+
+
+}catch(error){
+
+console.error(
+"Camera error:",
+error
+);
+
+
+/*
+   Fallback:
+   normal environment camera
+*/
+
+try{
+
+scanner=
+new Html5Qrcode(
+"reader"
+);
+
+
+await scanner.start(
+
+{
+facingMode:
+"environment"
+},
+
+{
+fps:5,
+
+qrbox:250,
+
+aspectRatio:1.7777778
+
+},
+
+decodedText=>{
+
+handleScan(
+decodedText
+);
+
+},
+
+errorMessage=>{
+
+}
+
+);
+
+
+scannerRunning=true;
+
+
+setTimeout(
+async function(){
+
+cameraTrack=
+getCameraTrack();
+
+
+if(cameraTrack){
+
+await applyAutoFocus();
+
+startFocusMonitor();
+
+}
+
+},
+800
+);
+
+
+document.getElementById(
+"message"
+).innerText=
+"Camera active. Scan PRD Card.";
+
+
+}catch(
+fallbackError
+){
+
+console.error(
+"Camera fallback error:",
+fallbackError
+);
+
+
+document.getElementById(
+"reader"
+).style.display="none";
+
+
+document.getElementById(
+"startCameraArea"
+).style.display="block";
+
+
+document.getElementById(
+"message"
+).innerText=
+"Unable to start camera.";
+
+}
+
+}
+
+}
+
+
+
+/* =========================================
+   FIREBASE AUTH
+========================================= */
+
+if(firebaseConfigured){
+
+auth.onAuthStateChanged(
+user=>{
+
+if(user){
+
+firebaseReady=true;
+
+document.getElementById(
+"message"
+).innerText=
+"Database connected. Ready for PRD scan.";
+
+startRealtimeRecords();
+
+}else{
+
+firebaseReady=false;
+
+document.getElementById(
+"message"
+).innerText=
+"Connecting to PRD database...";
+
+}
+
+});
+
+
+auth.signInAnonymously()
+.catch(error=>{
+
+console.error(error);
+
+firebaseReady=false;
+
+document.getElementById(
+"message"
+).innerText=
+"Database connection failed: "+
+(error.code||"unknown error");
+
+});
+
+}else{
+
+document.getElementById(
+"message"
+).innerText=
+"New Firebase Config required.";
+
+}
+
+
+
+/* =========================================
+   REALTIME RECORDS
+========================================= */
+
+function startRealtimeRecords(){
+
+if(realtimeStarted)
+return;
+
+realtimeStarted=true;
+
+
+db.collection("prdRecords")
+.onSnapshot(
+
+snapshot=>{
+
+allRecords=[];
+
+
+snapshot.forEach(
+doc=>{
+
+allRecords.push({
+
+id:doc.id,
+
+...doc.data()
+
+});
+
+});
+
+
+allRecords.sort(
+(a,b)=>{
+
+const aTime=
+a.createdAt &&
+a.createdAt.toMillis
+?a.createdAt.toMillis()
+:0;
+
+
+const bTime=
+b.createdAt &&
+b.createdAt.toMillis
+?b.createdAt.toMillis()
+:0;
+
+
+return bTime-aTime;
+
+});
+
+
+renderRecords();
+
+},
+
+
+error=>{
+
+console.error(error);
+
+document.getElementById(
+"message"
+).innerText=
+"Database error: "+
+(error.code||"unknown error");
+
+}
+
+);
+
+}
+
+
+
+/* =========================================
+   RENDER RECORDS
+========================================= */
+
+function renderRecords(){
+
+const selectedDate=
+document.getElementById(
+"dateFilter"
+).value;
+
+
+const search=
+document.getElementById(
+"searchInput"
+).value
+.trim()
+.toLowerCase();
+
+
+const tbody=
+document.getElementById(
+"recordTableBody"
+);
+
+
+const empty=
+document.getElementById(
+"emptyMessage"
+);
+
+
+tbody.innerHTML="";
+
+
+const filtered=
+allRecords.filter(
+record=>{
+
+if(
+String(record.date)!==
+String(selectedDate)
+)
+return false;
+
+
+if(!search)
+return true;
+
+
+const name=
+String(record.name||"")
+.toLowerCase();
+
+
+const id=
+String(record.employeeID||"")
+.toLowerCase();
+
+
+return(
+name.includes(search)||
+id.includes(search)
+);
+
+});
+
+
+if(filtered.length===0){
+
+empty.style.display="block";
+
+return;
+
+}
+
+
+empty.style.display="none";
+
+
+filtered.forEach(
+(record,index)=>{
+
+const employee=
+employees.find(
+item=>
+String(item.employeeID)===
+String(record.employeeID)
+);
+
+
+const passID=
+record.passID||
+(employee?
+employee.passID:"");
+
+
+const displayPassID=
+authorised
+?passID
+:"*********";
+
+
+const row=
+document.createElement("tr");
+
+
+const status=
+String(
+record.status||""
+).toUpperCase();
+
+
+const statusClass=
+status==="EXPIRED"
+?"status-expired"
+:"status-valid";
+
+
+row.innerHTML=`
+
+<td>${index+1}</td>
+
+<td>${escapeHTML(record.name)}</td>
+
+<td>${escapeHTML(record.rank)}</td>
+
+<td>${escapeHTML(record.employeeID)}</td>
+
+<td>${escapeHTML(displayPassID)}</td>
+
+<td>${escapeHTML(record.expiry)}</td>
+
+<td>${escapeHTML(record.date)}</td>
+
+<td>${escapeHTML(record.time)}</td>
+
+<td class="${statusClass}">
+${escapeHTML(record.status)}
+</td>
+
+`;
+
+
+tbody.appendChild(row);
+
+});
+
+}
+
+
+
+/* =========================================
+   ESCAPE HTML
+========================================= */
+
+function escapeHTML(value){
+
+return String(value??"")
+
+.replace(
+/&/g,
+"&amp;"
+)
+
+.replace(
+/</g,
+"&lt;"
+)
+
+.replace(
+/>/g,
+"&gt;"
+)
+
+.replace(
+/"/g,
+"&quot;"
+)
+
+.replace(
+/'/g,
+"&#039;"
+);
+
+}
+
+
+
+/* =========================================
+   AUTHORISED ACCESS
+   PASSWORD: SDU1234
+========================================= */
+
+function authorisedAccess(){
+
+const password=
+prompt(
+"Enter Authorised Access Password:"
+);
+
+
+if(password===null)
+return;
+
+
+if(password==="SDU1234"){
+
+authorised=true;
+
+
+document.getElementById(
+"message"
+).innerText=
+"Authorised Access enabled.";
+
+
+renderRecords();
+
+
+const name=
+document.getElementById(
+"displayName"
+).innerText;
+
+
+const employee=
+employees.find(
+item=>
+item.name===name
+);
+
+
+if(employee)
+showOfficer(employee);
+
+
+}else{
+
+alert(
+"Incorrect password."
+);
+
+}
+
+}
+
+
+
+/* =========================================
+   CLEAR ALL RECORDS
+   PASSWORD: SDU1234
+========================================= */
+
+async function clearAllRecords(){
+
+if(!firebaseConfigured){
+
+alert(
+"New Firebase Config has not been added."
+);
+
+return;
+
+}
+
+
+const password=
+prompt(
+"Enter Clear All Records Password:"
+);
+
+
+if(password===null)
+return;
+
+
+if(password!=="SDU1234"){
+
+alert(
+"Incorrect password."
+);
+
+return;
+
+}
+
+
+const confirmClear=
+confirm(
+"Are you sure you want to permanently delete ALL PRD records?"
+);
+
+
+if(!confirmClear)
+return;
+
+
+try{
+
+await waitForFirebase();
+
+
+const snapshot=
+await db
+.collection("prdRecords")
+.get();
+
+
+if(snapshot.empty){
+
+alert(
+"No records to clear."
+);
+
+return;
+
+}
+
+
+const batch=
+db.batch();
+
+
+snapshot.forEach(
+doc=>{
+
+batch.delete(
+doc.ref
+);
+
+});
+
+
+await batch.commit();
+
+
+alert(
+"All PRD records have been cleared."
+);
+
+
+}catch(error){
+
+console.error(error);
+
+
+alert(
+"Unable to clear records: "+
+(error.code||"unknown error")
+);
+
+}
+
+}
+
+
+
+/* =========================================
+   NEW DAY
+========================================= */
+
+let lastSingaporeDate=
+getSingaporeDate();
+
+
+setInterval(
+()=>{
+
+const currentDate=
+getSingaporeDate();
+
+
+if(
+currentDate!==
+lastSingaporeDate
+){
+
+lastSingaporeDate=
+currentDate;
+
+
+document.getElementById(
+"dateFilter"
+).value=
+currentDate;
+
+
+document.getElementById(
+"searchInput"
+).value="";
+
+
+document.getElementById(
+"officerCard"
+).style.display="none";
+
+
+renderRecords();
+
+
+document.getElementById(
+"message"
+).innerText=
+"New day detected. Ready for today's PRD collection.";
+
+}
+
+},
+30000
+);
+
+
+
+/* =========================================
+   START
+========================================= */
+
+setToday();
+
+renderRecords();
+
+
+</script>
+
+</body>
+</html>
